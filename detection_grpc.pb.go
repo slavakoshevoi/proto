@@ -22,7 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ObjectsDetectorClient interface {
-	Detect(ctx context.Context, opts ...grpc.CallOption) (ObjectsDetector_DetectClient, error)
+	Detect(ctx context.Context, in *ImageRequest, opts ...grpc.CallOption) (*ResultResponse, error)
 }
 
 type objectsDetectorClient struct {
@@ -33,45 +33,20 @@ func NewObjectsDetectorClient(cc grpc.ClientConnInterface) ObjectsDetectorClient
 	return &objectsDetectorClient{cc}
 }
 
-func (c *objectsDetectorClient) Detect(ctx context.Context, opts ...grpc.CallOption) (ObjectsDetector_DetectClient, error) {
-	stream, err := c.cc.NewStream(ctx, &ObjectsDetector_ServiceDesc.Streams[0], "/grpc.ObjectsDetector/Detect", opts...)
+func (c *objectsDetectorClient) Detect(ctx context.Context, in *ImageRequest, opts ...grpc.CallOption) (*ResultResponse, error) {
+	out := new(ResultResponse)
+	err := c.cc.Invoke(ctx, "/grpc.ObjectsDetector/Detect", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
-	x := &objectsDetectorDetectClient{stream}
-	return x, nil
-}
-
-type ObjectsDetector_DetectClient interface {
-	Send(*ImageRequest) error
-	CloseAndRecv() (*ResultResponse, error)
-	grpc.ClientStream
-}
-
-type objectsDetectorDetectClient struct {
-	grpc.ClientStream
-}
-
-func (x *objectsDetectorDetectClient) Send(m *ImageRequest) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *objectsDetectorDetectClient) CloseAndRecv() (*ResultResponse, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(ResultResponse)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
+	return out, nil
 }
 
 // ObjectsDetectorServer is the server API for ObjectsDetector service.
 // All implementations must embed UnimplementedObjectsDetectorServer
 // for forward compatibility
 type ObjectsDetectorServer interface {
-	Detect(ObjectsDetector_DetectServer) error
+	Detect(context.Context, *ImageRequest) (*ResultResponse, error)
 	mustEmbedUnimplementedObjectsDetectorServer()
 }
 
@@ -79,8 +54,8 @@ type ObjectsDetectorServer interface {
 type UnimplementedObjectsDetectorServer struct {
 }
 
-func (UnimplementedObjectsDetectorServer) Detect(ObjectsDetector_DetectServer) error {
-	return status.Errorf(codes.Unimplemented, "method Detect not implemented")
+func (UnimplementedObjectsDetectorServer) Detect(context.Context, *ImageRequest) (*ResultResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Detect not implemented")
 }
 func (UnimplementedObjectsDetectorServer) mustEmbedUnimplementedObjectsDetectorServer() {}
 
@@ -95,30 +70,22 @@ func RegisterObjectsDetectorServer(s grpc.ServiceRegistrar, srv ObjectsDetectorS
 	s.RegisterService(&ObjectsDetector_ServiceDesc, srv)
 }
 
-func _ObjectsDetector_Detect_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(ObjectsDetectorServer).Detect(&objectsDetectorDetectServer{stream})
-}
-
-type ObjectsDetector_DetectServer interface {
-	SendAndClose(*ResultResponse) error
-	Recv() (*ImageRequest, error)
-	grpc.ServerStream
-}
-
-type objectsDetectorDetectServer struct {
-	grpc.ServerStream
-}
-
-func (x *objectsDetectorDetectServer) SendAndClose(m *ResultResponse) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *objectsDetectorDetectServer) Recv() (*ImageRequest, error) {
-	m := new(ImageRequest)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
+func _ObjectsDetector_Detect_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImageRequest)
+	if err := dec(in); err != nil {
 		return nil, err
 	}
-	return m, nil
+	if interceptor == nil {
+		return srv.(ObjectsDetectorServer).Detect(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/grpc.ObjectsDetector/Detect",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ObjectsDetectorServer).Detect(ctx, req.(*ImageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 // ObjectsDetector_ServiceDesc is the grpc.ServiceDesc for ObjectsDetector service.
@@ -127,13 +94,12 @@ func (x *objectsDetectorDetectServer) Recv() (*ImageRequest, error) {
 var ObjectsDetector_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "grpc.ObjectsDetector",
 	HandlerType: (*ObjectsDetectorServer)(nil),
-	Methods:     []grpc.MethodDesc{},
-	Streams: []grpc.StreamDesc{
+	Methods: []grpc.MethodDesc{
 		{
-			StreamName:    "Detect",
-			Handler:       _ObjectsDetector_Detect_Handler,
-			ClientStreams: true,
+			MethodName: "Detect",
+			Handler:    _ObjectsDetector_Detect_Handler,
 		},
 	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "detection.proto",
 }

@@ -3,14 +3,34 @@ syntax = 'proto3';
 package grpc;
 option go_package = ".;detection";
 
-message ImageRequest {
-  string image = 1;
-}
-
-message ResultResponse {
-  string result = 1;
-}
-
 service ObjectsDetector {
-  rpc Detect(stream ImageRequest) returns (ResultResponse) {}
+  rpc Detect(ImageRequest) returns (ResultResponse) {}
+}
+
+message ImageRequest {
+  message ImageInfo {
+    string image_type = 2;
+  }
+
+  ImageInfo metadata = 1;
+  bytes image = 2;
+}
+message ResultResponse {
+  enum Type {
+    EXPRESSION = 0;
+    OBJECT = 1;
+  }
+  message BBox {
+    oneof value {
+      float x = 1;
+      float y = 2;
+      float width = 3;
+      float  height = 4;
+    }
+  }
+
+  Type type = 1;
+  string value = 2;
+  float score = 3;
+  repeated BBox bbox = 4;
 }
