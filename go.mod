@@ -1,4 +1,4 @@
-module gitlab.devhost.io/verbato/proto
+module github.com/slavakoshevoi/proto
 
 go 1.18
 
