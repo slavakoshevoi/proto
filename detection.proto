@@ -1,0 +1,16 @@
+syntax = 'proto3';
+
+package grpc;
+option go_package = ".;detection";
+
+message ImageRequest {
+  string image = 1;
+}
+
+message ResultResponse {
+  string result = 1;
+}
+
+service ObjectsDetector {
+  rpc Detect(stream ImageRequest) returns (ResultResponse) {}
+}
